@@ -126,10 +126,17 @@ const SeqCanvas = forwardRef<SeqHandle, Props>(function SeqCanvas(
       if (started) return;
       started = true;
       load(0);
-      for (const step of [8, 4, 2, 1]) {
-        for (let i = 0; i < count; i += step) load(i);
-      }
-      load(count - 1);
+      // The first frame is enough to paint. The rest wait for the page's own
+      // load event so they never hold up first render on a slow connection.
+      const rest = () => {
+        if (cancelled) return;
+        for (const step of [8, 4, 2, 1]) {
+          for (let i = 0; i < count; i += step) load(i);
+        }
+        load(count - 1);
+      };
+      if (document.readyState === "complete") rest();
+      else window.addEventListener("load", rest, { once: true });
     };
 
     resize();
